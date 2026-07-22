@@ -1,5 +1,4 @@
 import React from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { CompassHeader } from '@/components/CompassHeader';
 import { NewsGrid } from '@/components/NewsGrid';
 import { EmptyState } from '@/components/EmptyState';
@@ -15,18 +14,21 @@ async function getNews(): Promise<{ news: Haber[]; isConfigured: boolean }> {
   }
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data, error } = await supabase
-      .from('haberler')
-      .select('*')
-      .order('yayin_tarihi', { ascending: false })
-      .limit(50);
+    const endpoint = `${SUPABASE_URL}/rest/v1/haberler?select=*&order=yayin_tarihi.desc&limit=50`;
+    const res = await fetch(endpoint, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      cache: 'no-store',
+    });
 
-    if (error) {
-      console.error('Supabase fetch error:', error.message);
+    if (!res.ok) {
+      console.error('Supabase REST HTTP error:', res.status, res.statusText);
       return { news: [], isConfigured: true };
     }
 
+    const data = await res.json();
     return { news: (data as Haber[]) || [], isConfigured: true };
   } catch (err) {
     console.error('Unexpected error fetching news:', err);
