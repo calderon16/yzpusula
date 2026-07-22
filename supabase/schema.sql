@@ -1,32 +1,24 @@
--- ====================================================================
--- YZ PUSULA - Supabase PostgreSQL Veritabanı Şeması
--- ====================================================================
+-- YZ PUSULA Veritabanı Şeması
+-- Supabase / PostgreSQL için Haberler Tablosu
 
--- 1. haberler tablosunun oluşturulması
-CREATE TABLE IF NOT EXISTS public.haberler (
+CREATE TABLE IF NOT EXISTS haberler (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     baslik TEXT NOT NULL,
     ozet TEXT NOT NULL,
-    kaynak_url TEXT NOT NULL UNIQUE,
-    kaynak_adi TEXT NOT NULL,
-    yayin_tarihi TIMESTAMPTZ NOT NULL DEFAULT now(),
-    eklenme_tarihi TIMESTAMPTZ NOT NULL DEFAULT now()
+    kaynak_url TEXT UNIQUE NOT NULL,
+    kaynak_adi VARCHAR(100) NOT NULL,
+    resim_url TEXT,
+    yayin_tarihi TIMESTAMPTZ NOT NULL,
+    eklenme_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 2. Yayın tarihine göre hızlı sıralama için DESC indeks
-CREATE INDEX IF NOT EXISTS idx_haberler_yayin_tarihi 
-ON public.haberler (yayin_tarihi DESC);
+-- Yayın tarihine göre hızlı sıralama için İndeks
+CREATE INDEX IF NOT EXISTS idx_haberler_yayin_tarihi ON haberler (yayin_tarihi DESC);
 
--- 3. Row Level Security (RLS) Etkinleştirilmesi
-ALTER TABLE public.haberler ENABLE ROW LEVEL SECURITY;
+-- Herkese açık okuma yetkisi (RLS Policy)
+ALTER TABLE haberler ENABLE ROW LEVEL SECURITY;
 
--- 4. Herkesin (anon/public) haberleri okuyabilmesi için SELECT politikası
-DROP POLICY IF EXISTS "Herkese Açık Okuma Politikası" ON public.haberler;
-
-CREATE POLICY "Herkese Açık Okuma Politikası" 
-ON public.haberler 
-FOR SELECT 
+CREATE POLICY "Herkese Açık Okuma Yetkisi" 
+ON haberler FOR SELECT 
+TO public 
 USING (true);
-
--- Not: Ekleme/Güncelleme/Silme politikası tanımlanmamıştır.
--- Bu sayede sadece Supabase SERVICE_ROLE_KEY ile çalışan backend/scriptler yazma hakkına sahip olur.

@@ -52,12 +52,50 @@ const RSS_FEEDS = [
   },
 ];
 
+const FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=1200&q=80',
+];
+
+/**
+ * RSS Öğesinden Haber Görsel URL'sini Çıkarır
+ */
+function extractImageUrl(item, title, feedName) {
+  if (item.enclosure && item.enclosure.url && /\.(jpg|jpeg|png|webp|gif)/i.test(item.enclosure.url)) {
+    return item.enclosure.url;
+  }
+  if (item['media:content'] && item['media:content'].$ && item['media:content'].$.url) {
+    return item['media:content'].$.url;
+  }
+  if (item['media:thumbnail'] && item['media:thumbnail'].$ && item['media:thumbnail'].$.url) {
+    return item['media:thumbnail'].$.url;
+  }
+  
+  const htmlContent = item['content:encoded'] || item.content || item.summary || '';
+  const imgMatch = htmlContent.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (imgMatch && imgMatch[1] && /^https?:\/\//i.test(imgMatch[1])) {
+    return imgMatch[1];
+  }
+
+  // Fallback görsel
+  let charSum = 0;
+  for (let i = 0; i < (title || feedName).length; i++) {
+    charSum += (title || feedName).charCodeAt(i);
+  }
+  return FALLBACK_IMAGES[charSum % FALLBACK_IMAGES.length];
+}
+
 /**
  * Ücretsiz Google Translate GTX Servisi ile Metni Türkçe'ye Çevirir
  */
 export async function translateToTurkish(text) {
   if (!text || text.trim() === '') return text;
-  // Eğer metinde belirgin Türkçe karakterler varsa veya boşsa
   if (/[çğıöşüÇĞİÖŞÜ]/.test(text)) return text;
 
   try {
@@ -100,17 +138,17 @@ function cleanText(text) {
 }
 
 /**
- * Özeti uygun uzunluğa kısaltır
+ * Özeti detaylı ve kapsamlı uzunluğa (1200 karaktere kadar) getirir
  */
 function formatSummary(rawSummary) {
   const cleaned = cleanText(rawSummary);
-  if (!cleaned) return 'Özet bulunmuyor. Detaylar için kaynağı ziyaret edin.';
-  if (cleaned.length <= 320) return cleaned;
-  return cleaned.substring(0, 317) + '...';
+  if (!cleaned) return 'Detaylı özet henüz bulunmuyor. Makalenin tamamını orijinal kaynağından inceleyebilirsiniz.';
+  if (cleaned.length <= 1200) return cleaned;
+  return cleaned.substring(0, 1197) + '...';
 }
 
 async function runFetchNews() {
-  console.log(`🧭 YZ PUSULA - RSS Haber Çekme & Türkçe Çeviri İşlemi Başladı [${new Date().toISOString()}]`);
+  console.log(`🧭 YZ PUSULA - RSS Haber Çekme, Görsel Ayıklama & Çeviri İşlemi Başladı [${new Date().toISOString()}]`);
 
   let totalFetched = 0;
   let totalInserted = 0;
@@ -127,8 +165,10 @@ async function runFetchNews() {
         totalFetched++;
         let title = cleanText(item.title);
         const link = item.link || item.guid;
-        const rawSummary = item.contentSnippet || item.summary || item.content || '';
-        let summary = formatSummary(rawSummary);
+        
+        // En uzun metin kaynağını tercih et
+        const rawContent = item['content:encoded'] || item.content || item.contentSnippet || item.summary || '';
+        let summary = formatSummary(rawContent);
         const pubDateStr = item.pubDate || item.isoDate || new Date().toISOString();
         const pubDate = new Date(pubDateStr).toISOString();
 
@@ -137,13 +177,16 @@ async function runFetchNews() {
           continue;
         }
 
+        // Haber görselini ayıkla
+        const resimUrl = extractImageUrl(item, title, feedConfig.name);
+
         // Yabancı kaynak ise otomatik Türkçe'ye çevir
         if (feedConfig.isForeign) {
           title = await translateToTurkish(title);
           summary = await translateToTurkish(summary);
         }
 
-        // Supabase'e ekleme / upsert (kaynak_url UNIQUE olduğu için çakışmada yok say)
+        // Supabase'e ekleme / upsert
         const { data, error } = await supabase
           .from('haberler')
           .upsert(
@@ -152,9 +195,10 @@ async function runFetchNews() {
               ozet: summary,
               kaynak_url: link,
               kaynak_adi: feedConfig.name,
+              resim_url: resimUrl,
               yayin_tarihi: pubDate,
             },
-            { onConflict: 'kaynak_url', ignoreDuplicates: true }
+            { onConflict: 'kaynak_url', ignoreDuplicates: false }
           )
           .select('id');
 
@@ -162,10 +206,10 @@ async function runFetchNews() {
           console.error(`   ❌ Supabase Hata (${feedConfig.name}): ${error.message}`);
           totalSkipped++;
         } else if (data && data.length > 0) {
-          console.log(`   ✅ Yeni Türkçe Haber Eklendi: "${title.substring(0, 45)}..."`);
+          console.log(`   ✅ Haber Güncellendi/Eklendi [Görsel: var]: "${title.substring(0, 45)}..."`);
           totalInserted++;
         } else {
-          totalSkipped++; // Zaten var (ignoreDuplicates)
+          totalSkipped++;
         }
       }
     } catch (err) {
@@ -174,8 +218,8 @@ async function runFetchNews() {
   }
 
   console.log('\n==================================================');
-  console.log(`🎉 RSS Çekme & Otomatik Çeviri Tamamlandı!`);
-  console.log(`📊 İşlenen: ${totalFetched} | ✨ Yeni Eklendi: ${totalInserted} | ⏩ Atlandı/Var Olan: ${totalSkipped}`);
+  console.log(`🎉 RSS Çekme & Otomatik Görselleştirme Tamamlandı!`);
+  console.log(`📊 İşlenen: ${totalFetched} | ✨ Eklendi/Güncellendi: ${totalInserted} | ⏩ Atlandı: ${totalSkipped}`);
   console.log('==================================================\n');
 
   process.exit(0);

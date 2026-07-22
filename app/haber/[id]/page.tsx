@@ -5,7 +5,7 @@ import { CompassHeader } from '@/components/CompassHeader';
 import { NewsCard } from '@/components/NewsCard';
 import { Haber, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { formatFullDate, getRelativeTimeString } from '@/lib/dateUtils';
-import { ArrowLeft, ExternalLink, Clock, Newspaper, Share2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Clock, Newspaper, Sparkles, BookOpen } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -14,6 +14,25 @@ interface PageProps {
   params: {
     id: string;
   };
+}
+
+const FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=1200&q=80',
+];
+
+function getFallbackImage(title: string): string {
+  let charSum = 0;
+  for (let i = 0; i < title.length; i++) {
+    charSum += title.charCodeAt(i);
+  }
+  return FALLBACK_IMAGES[charSum % FALLBACK_IMAGES.length];
 }
 
 async function getHaberDetail(id: string): Promise<{ haber: Haber | null; relatedNews: Haber[] }> {
@@ -72,6 +91,7 @@ export default async function HaberDetailPage({ params }: PageProps) {
 
   const relativeTime = getRelativeTimeString(haber.yayin_tarihi);
   const fullDate = formatFullDate(haber.yayin_tarihi);
+  const imageUrl = haber.resim_url || getFallbackImage(haber.baslik);
 
   const getSourceBadgeStyle = (kaynak: string) => {
     switch (kaynak.toLowerCase()) {
@@ -87,6 +107,9 @@ export default async function HaberDetailPage({ params }: PageProps) {
         return 'bg-navy/10 text-navy border-steel/30';
     }
   };
+
+  // Özeti paragraflara ayır
+  const paragraphs = haber.ozet ? haber.ozet.split('\n\n').filter(Boolean) : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-paper text-ink">
@@ -110,58 +133,88 @@ export default async function HaberDetailPage({ params }: PageProps) {
         </div>
 
         {/* Makale Kartı */}
-        <article className="bg-paper border border-steel/30 rounded-lg p-6 sm:p-10 shadow-sm">
-          {/* Üst Yayın Rozeti & Zaman */}
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono mb-6 pb-4 border-b border-steel/15">
-            <div className="flex items-center gap-3">
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold tracking-wide border uppercase ${getSourceBadgeStyle(
-                  haber.kaynak_adi
-                )}`}
+        <article className="bg-paper border border-steel/30 rounded-xl overflow-hidden shadow-sm">
+          {/* Görsel Banner */}
+          <div className="relative w-full h-72 sm:h-96 bg-navy/20 overflow-hidden">
+            <img
+              src={imageUrl}
+              alt={haber.baslik}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+            
+            {/* Görsel Üzeri Başlık & Rozetler */}
+            <div className="absolute bottom-6 left-6 right-6 text-paper">
+              <div className="flex items-center gap-3 text-xs font-mono mb-3">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold tracking-wide border uppercase bg-paper/90 ${getSourceBadgeStyle(
+                    haber.kaynak_adi
+                  )}`}
+                >
+                  <Newspaper className="w-3.5 h-3.5 text-brass" />
+                  {haber.kaynak_adi}
+                </span>
+
+                <span className="inline-flex items-center gap-1.5 text-steel/90 bg-black/60 px-2.5 py-1 rounded backdrop-blur-sm">
+                  <Clock className="w-3.5 h-3.5 text-brass" />
+                  {relativeTime}
+                </span>
+              </div>
+
+              <h1 className="font-newsreader font-bold text-2xl sm:text-4xl md:text-5xl text-paper leading-tight tracking-tight shadow-text">
+                {haber.baslik}
+              </h1>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-10">
+            {/* Yayın Tarihi Detayı */}
+            <div className="flex items-center justify-between text-xs font-mono text-steel mb-8 pb-4 border-b border-steel/20">
+              <span className="flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4 text-brass" />
+                Detaylı Haber Özeti
+              </span>
+              <span>Yayın Tarihi: {fullDate}</span>
+            </div>
+
+            {/* Türkçe Uzun Haber İçeriği / Özet Bloğu */}
+            <div className="space-y-6">
+              {paragraphs.length > 0 ? (
+                paragraphs.map((p, idx) => (
+                  <p
+                    key={idx}
+                    className="font-inter text-ink/90 text-base sm:text-lg leading-relaxed font-normal"
+                  >
+                    {p}
+                  </p>
+                ))
+              ) : (
+                <p className="font-inter text-ink/90 text-base sm:text-lg leading-relaxed font-normal">
+                  {haber.ozet}
+                </p>
+              )}
+            </div>
+
+            {/* Orijinal Haberi Kaynağında Oku Butonu */}
+            <div className="mt-10 pt-8 border-t border-steel/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-brassLight/10 p-6 rounded-lg border border-brass/30">
+              <div>
+                <h4 className="font-newsreader font-bold text-lg text-navy mb-1">
+                  Makalenin Tamamını Okuyun
+                </h4>
+                <p className="font-inter text-xs text-steel/80">
+                  {haber.kaynak_adi} üzerinde yayınlanan orijinal makale bağlantısına erişin.
+                </p>
+              </div>
+
+              <a
+                href={haber.kaynak_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-navy text-paper font-mono text-sm font-semibold rounded-md border border-brass/50 hover:bg-brass hover:text-navy transition-all duration-200 shadow-md group whitespace-nowrap"
               >
-                <Newspaper className="w-3.5 h-3.5 text-brass" />
-                {haber.kaynak_adi}
-              </span>
-
-              <span className="inline-flex items-center gap-1.5 text-steel" title={fullDate}>
-                <Clock className="w-3.5 h-3.5 text-steel/70" />
-                {relativeTime}
-              </span>
-            </div>
-
-            <span className="text-steel/70 text-[11px]">{fullDate}</span>
-          </div>
-
-          {/* Manşet Başlık (Serif Font) */}
-          <h1 className="font-newsreader font-bold text-3xl sm:text-4xl md:text-5xl text-ink leading-tight tracking-tight mb-6">
-            {haber.baslik}
-          </h1>
-
-          {/* Türkçe Haber Özeti Bloğu */}
-          <div className="bg-paper border-l-4 border-brass pl-5 py-3 my-6 rounded-r">
-            <div className="flex items-center gap-1.5 text-xs font-mono text-brass uppercase tracking-wider font-semibold mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Haber Özeti (Türkçe)</span>
-            </div>
-            <p className="font-inter text-ink/90 text-base sm:text-lg leading-relaxed font-normal">
-              {haber.ozet}
-            </p>
-          </div>
-
-          {/* Orijinal Haberi Kaynağında Oku Butonu */}
-          <div className="mt-8 pt-6 border-t border-steel/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-            <a
-              href={haber.kaynak_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-navy text-paper font-mono text-sm font-semibold rounded-md border border-brass/50 hover:bg-brass hover:text-navy transition-all duration-200 shadow-md group"
-            >
-              <span>Orijinal Makaleyi Kaynağında Oku ({haber.kaynak_adi})</span>
-              <ExternalLink className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </a>
-
-            <div className="text-center sm:text-right text-xs font-mono text-steel">
-              Kaynak: <span className="text-ink font-medium">{haber.kaynak_adi}</span>
+                <span>Kaynağında Oku ({haber.kaynak_adi})</span>
+                <ExternalLink className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </a>
             </div>
           </div>
         </article>

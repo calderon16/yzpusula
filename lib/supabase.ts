@@ -6,13 +6,13 @@ export interface Haber {
   ozet: string;
   kaynak_url: string;
   kaynak_adi: string;
+  resim_url?: string;
   yayin_tarihi: string;
   eklenme_tarihi: string;
 }
 
 export function cleanHeaderString(str?: string): string {
   if (!str) return '';
-  // Unicode BOM (\uFEFF) ve görünmeyen non-ASCII karakterleri temizle
   return str.replace(/^\uFEFF/, '').replace(/[^\x00-\x7F]/g, '').trim();
 }
 
