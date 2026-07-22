@@ -58,7 +58,7 @@ const FALLBACK_IMAGES = [
 ];
 
 /**
- * Makalenin orijinal web sayfasından GERÇEK og:image / twitter:image fotoğrafını çeker
+ * Makalenin orijinal web sayfasından og:image etiketini okur (görsel indirilmez, sadece URL döner)
  */
 async function fetchRealOgImage(pageUrl) {
   if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return null;
@@ -97,13 +97,13 @@ async function fetchRealOgImage(pageUrl) {
       }
     }
   } catch (err) {
-    // Sayfa çekilemezse RSS etiketlerine geç
+    // Sayfa çekilemezse null dön
   }
   return null;
 }
 
 /**
- * RSS etiketlerinden veya Fallback resimlerden görsel seçer
+ * RSS etiketlerinden veya Fallback resimlerden alternatif görsel seçer
  */
 function extractRssImage(item, title, feedName) {
   if (item.enclosure && item.enclosure.url && /\.(jpg|jpeg|png|webp|gif)/i.test(item.enclosure.url)) {
@@ -169,15 +169,18 @@ function cleanText(text) {
     .trim();
 }
 
+/**
+ * RSS'ten gelen özeti 2000 karaktere kadar saklar (2000'i geçerse keser)
+ */
 function formatSummary(rawSummary) {
   const cleaned = cleanText(rawSummary);
   if (!cleaned) return 'Detaylı özet henüz bulunmuyor. Makalenin tamamını orijinal kaynağından inceleyebilirsiniz.';
-  if (cleaned.length <= 1200) return cleaned;
-  return cleaned.substring(0, 1197) + '...';
+  if (cleaned.length <= 2000) return cleaned;
+  return cleaned.substring(0, 1997) + '...';
 }
 
 async function runFetchNews() {
-  console.log(`🧭 YZ PUSULA - Orijinal Fotoğraf Destekli Akıllı RSS Çekme Başladı [${new Date().toISOString()}]`);
+  console.log(`🧭 YZ PUSULA - Orijinal Fotoğraf ve 2000 Karakter Destekli Akıllı RSS Çekme Başladı [${new Date().toISOString()}]`);
 
   const { data: existingNews } = await supabase
     .from('haberler')
@@ -222,13 +225,11 @@ async function runFetchNews() {
           continue;
         }
 
-        // Önce orijinal web sayfasından gerçek makale fotoğrafını çek
-        let resimUrl = await fetchRealOgImage(link);
+        // Orijinal web sayfasından og:image URL'sini çek (null ise null kalır)
+        const gorselUrl = await fetchRealOgImage(link);
         
-        // Alınamazsa RSS etiketlerinden veya fallback'ten çek
-        if (!resimUrl) {
-          resimUrl = extractRssImage(item, title, feedConfig.name);
-        }
+        // resimUrl alanına gorselUrl veya RSS etiketlerinden seçilen resmi koy
+        const resimUrl = gorselUrl || extractRssImage(item, title, feedConfig.name);
 
         const { data, error } = await supabase
           .from('haberler')
@@ -238,6 +239,7 @@ async function runFetchNews() {
               ozet: summary,
               kaynak_url: link,
               kaynak_adi: feedConfig.name,
+              gorsel_url: gorselUrl,
               resim_url: resimUrl,
               yayin_tarihi: pubDate,
             },
@@ -249,7 +251,7 @@ async function runFetchNews() {
           console.error(`   ❌ Supabase Hata: ${error.message}`);
           totalSkipped++;
         } else if (data && data.length > 0) {
-          console.log(`   ✅ Gerçek Fotoğraflı Haber Eklendi: "${title.substring(0, 45)}..." [Foto: ${resimUrl.substring(0, 40)}...]`);
+          console.log(`   ✅ Haber Eklendi: "${title.substring(0, 45)}..." [og:image: ${gorselUrl ? 'VAR' : 'YOK'}]`);
           existingTitles.push({ baslik: title, url: link });
           totalInserted++;
         } else {
@@ -261,8 +263,24 @@ async function runFetchNews() {
     }
   }
 
+  // 3) OTOMATİK TEMİZLİK (retention: 7 gün)
+  console.log('\n🧹 7 Günden Eski Haberlerin Otomatik Temizliği Başlatılıyor...');
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  
+  const { error: deleteError, count: deletedCount } = await supabase
+    .from('haberler')
+    .delete({ count: 'exact' })
+    .lt('yayin_tarihi', sevenDaysAgo);
+
+  if (deleteError) {
+    console.error(`❌ Temizlik Hatası: ${deleteError.message}`);
+  } else {
+    console.log(`✅ ${deletedCount ?? 0} adet 7 günden eski haber veritabanından başarıyla silindi.`);
+  }
+
   console.log('\n==================================================');
-  console.log(`🎉 Orijinal Gerçek Fotoğraflı RSS Çekme Tamamlandı!`);
+  console.log(`🎉 RSS Çekme ve Temizlik Tamamlandı!`);
+  console.log(`📊 Çekilen: ${totalFetched} | Eklenen: ${totalInserted} | Atlanan: ${totalSkipped}`);
   console.log('==================================================\n');
 
   process.exit(0);

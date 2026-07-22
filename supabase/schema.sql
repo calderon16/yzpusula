@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS haberler (
     kaynak_url TEXT UNIQUE NOT NULL,
     kaynak_adi VARCHAR(100) NOT NULL,
     resim_url TEXT,
+    gorsel_url TEXT,
     yayin_tarihi TIMESTAMPTZ NOT NULL,
     eklenme_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

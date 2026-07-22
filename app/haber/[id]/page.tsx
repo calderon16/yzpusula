@@ -91,7 +91,7 @@ export default async function HaberDetailPage({ params }: PageProps) {
 
   const relativeTime = getRelativeTimeString(haber.yayin_tarihi);
   const fullDate = formatFullDate(haber.yayin_tarihi);
-  const imageUrl = haber.resim_url || getFallbackImage(haber.baslik);
+  const imageUrl = haber.gorsel_url || haber.resim_url;
 
   const getSourceBadgeStyle = (kaynak: string) => {
     switch (kaynak.toLowerCase()) {
@@ -134,20 +134,44 @@ export default async function HaberDetailPage({ params }: PageProps) {
 
         {/* Makale Kartı */}
         <article className="bg-paper border border-steel/30 rounded-xl overflow-hidden shadow-sm">
-          {/* Görsel Banner */}
-          <div className="relative w-full h-72 sm:h-96 bg-navy/20 overflow-hidden">
-            <img
-              src={imageUrl}
-              alt={haber.baslik}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-            
-            {/* Görsel Üzeri Başlık & Rozetler */}
-            <div className="absolute bottom-6 left-6 right-6 text-paper">
+          {/* Görsel Banner (Görsel Varsa Göster) */}
+          {imageUrl ? (
+            <div className="relative w-full h-72 sm:h-96 bg-navy/20 overflow-hidden">
+              <img
+                src={imageUrl}
+                alt={haber.baslik}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+              
+              {/* Görsel Üzeri Başlık & Rozetler */}
+              <div className="absolute bottom-6 left-6 right-6 text-paper">
+                <div className="flex items-center gap-3 text-xs font-mono mb-3">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold tracking-wide border uppercase bg-paper/90 ${getSourceBadgeStyle(
+                      haber.kaynak_adi
+                    )}`}
+                  >
+                    <Newspaper className="w-3.5 h-3.5 text-brass" />
+                    {haber.kaynak_adi}
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5 text-steel/90 bg-black/60 px-2.5 py-1 rounded backdrop-blur-sm">
+                    <Clock className="w-3.5 h-3.5 text-brass" />
+                    {relativeTime}
+                  </span>
+                </div>
+
+                <h1 className="font-newsreader font-bold text-2xl sm:text-4xl md:text-5xl text-paper leading-tight tracking-tight shadow-text">
+                  {haber.baslik}
+                </h1>
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 sm:p-10 pb-0">
               <div className="flex items-center gap-3 text-xs font-mono mb-3">
                 <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold tracking-wide border uppercase bg-paper/90 ${getSourceBadgeStyle(
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold tracking-wide border uppercase ${getSourceBadgeStyle(
                     haber.kaynak_adi
                   )}`}
                 >
@@ -155,17 +179,17 @@ export default async function HaberDetailPage({ params }: PageProps) {
                   {haber.kaynak_adi}
                 </span>
 
-                <span className="inline-flex items-center gap-1.5 text-steel/90 bg-black/60 px-2.5 py-1 rounded backdrop-blur-sm">
+                <span className="inline-flex items-center gap-1.5 text-steel">
                   <Clock className="w-3.5 h-3.5 text-brass" />
                   {relativeTime}
                 </span>
               </div>
 
-              <h1 className="font-newsreader font-bold text-2xl sm:text-4xl md:text-5xl text-paper leading-tight tracking-tight shadow-text">
+              <h1 className="font-newsreader font-bold text-2xl sm:text-4xl md:text-5xl text-ink leading-tight tracking-tight">
                 {haber.baslik}
               </h1>
             </div>
-          </div>
+          )}
 
           <div className="p-6 sm:p-10">
             {/* Yayın Tarihi Detayı */}
@@ -236,7 +260,7 @@ export default async function HaberDetailPage({ params }: PageProps) {
         )}
       </main>
 
-      {/* Alt Bilgi (GitHub linki olmadan temiz) */}
+      {/* Alt Bilgi */}
       <footer className="w-full bg-navy text-steel border-t border-steel/30 mt-16 py-8 font-mono text-xs">
         <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-col text-center md:text-left">

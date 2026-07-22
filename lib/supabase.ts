@@ -7,6 +7,7 @@ export interface Haber {
   kaynak_url: string;
   kaynak_adi: string;
   resim_url?: string;
+  gorsel_url?: string;
   yayin_tarihi: string;
   eklenme_tarihi: string;
 }
