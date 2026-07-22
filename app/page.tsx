@@ -24,14 +24,14 @@ async function getNews(): Promise<{ news: Haber[]; isConfigured: boolean }> {
     });
 
     if (!res.ok) {
-      console.error('Supabase REST HTTP error:', res.status, res.statusText);
+      console.error('Supabase REST HTTP error:', res.status, res.statusText, 'Endpoint:', endpoint);
       return { news: [], isConfigured: true };
     }
 
     const data = await res.json();
     return { news: (data as Haber[]) || [], isConfigured: true };
   } catch (err) {
-    console.error('Unexpected error fetching news:', err);
+    console.error('Unexpected error fetching news from Supabase:', err);
     return { news: [], isConfigured: true };
   }
 }

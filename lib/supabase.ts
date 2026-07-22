@@ -10,10 +10,13 @@ export interface Haber {
   eklenme_tarihi: string;
 }
 
-export const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.SUPABASE_URL ||
-  'https://facoyzosjmukbtbqszdq.supabase.co';
+export function cleanSupabaseUrl(rawUrl?: string): string {
+  const defaultUrl = 'https://facoyzosjmukbtbqszdq.supabase.co';
+  const url = rawUrl || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || defaultUrl;
+  return url.replace(/\/rest\/v1\/?$/i, '').replace(/\/+$/, '');
+}
+
+export const SUPABASE_URL = cleanSupabaseUrl();
 
 export const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
