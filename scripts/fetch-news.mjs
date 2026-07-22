@@ -23,28 +23,64 @@ const RSS_FEEDS = [
   {
     name: 'TechCrunch AI',
     url: 'https://techcrunch.com/category/artificial-intelligence/feed/',
+    isForeign: true,
   },
   {
     name: 'The Verge AI',
     url: 'https://www.theverge.com/rss/ai-artificial-intelligence/index.xml',
+    isForeign: true,
   },
   {
     name: 'VentureBeat AI',
     url: 'https://venturebeat.com/category/ai/feed/',
+    isForeign: true,
   },
   {
     name: 'MIT Technology Review',
     url: 'https://www.technologyreview.com/feed/',
+    isForeign: true,
   },
   {
     name: 'Ars Technica AI',
     url: 'https://feeds.arstechnica.com/arstechnica/index',
+    isForeign: true,
   },
   {
     name: 'Webrazzi',
     url: 'https://webrazzi.com/feed/',
+    isForeign: false,
   },
 ];
+
+/**
+ * Ücretsiz Google Translate GTX Servisi ile Metni Türkçe'ye Çevirir
+ */
+export async function translateToTurkish(text) {
+  if (!text || text.trim() === '') return text;
+  // Eğer metinde belirgin Türkçe karakterler varsa veya boşsa
+  if (/[çğıöşüÇĞİÖŞÜ]/.test(text)) return text;
+
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=tr&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      },
+    });
+
+    if (!res.ok) return text;
+    const data = await res.json();
+
+    if (data && data[0]) {
+      const translated = data[0].map((item) => item[0]).join('');
+      return translated || text;
+    }
+    return text;
+  } catch (err) {
+    console.error('Çeviri hatası:', err.message);
+    return text;
+  }
+}
 
 /**
  * HTML etiketlerini ve fazla boşlukları temizler
@@ -69,12 +105,12 @@ function cleanText(text) {
 function formatSummary(rawSummary) {
   const cleaned = cleanText(rawSummary);
   if (!cleaned) return 'Özet bulunmuyor. Detaylar için kaynağı ziyaret edin.';
-  if (cleaned.length <= 280) return cleaned;
-  return cleaned.substring(0, 277) + '...';
+  if (cleaned.length <= 320) return cleaned;
+  return cleaned.substring(0, 317) + '...';
 }
 
 async function runFetchNews() {
-  console.log(`🧭 YZ PUSULA - RSS Haber Çekme İşlemi Başladı [${new Date().toISOString()}]`);
+  console.log(`🧭 YZ PUSULA - RSS Haber Çekme & Türkçe Çeviri İşlemi Başladı [${new Date().toISOString()}]`);
 
   let totalFetched = 0;
   let totalInserted = 0;
@@ -89,16 +125,22 @@ async function runFetchNews() {
 
       for (const item of items) {
         totalFetched++;
-        const title = cleanText(item.title);
+        let title = cleanText(item.title);
         const link = item.link || item.guid;
         const rawSummary = item.contentSnippet || item.summary || item.content || '';
-        const summary = formatSummary(rawSummary);
+        let summary = formatSummary(rawSummary);
         const pubDateStr = item.pubDate || item.isoDate || new Date().toISOString();
         const pubDate = new Date(pubDateStr).toISOString();
 
         if (!title || !link) {
           totalSkipped++;
           continue;
+        }
+
+        // Yabancı kaynak ise otomatik Türkçe'ye çevir
+        if (feedConfig.isForeign) {
+          title = await translateToTurkish(title);
+          summary = await translateToTurkish(summary);
         }
 
         // Supabase'e ekleme / upsert (kaynak_url UNIQUE olduğu için çakışmada yok say)
@@ -120,7 +162,7 @@ async function runFetchNews() {
           console.error(`   ❌ Supabase Hata (${feedConfig.name}): ${error.message}`);
           totalSkipped++;
         } else if (data && data.length > 0) {
-          console.log(`   ✅ Yeni Haber Eklendi: "${title.substring(0, 45)}..."`);
+          console.log(`   ✅ Yeni Türkçe Haber Eklendi: "${title.substring(0, 45)}..."`);
           totalInserted++;
         } else {
           totalSkipped++; // Zaten var (ignoreDuplicates)
@@ -132,7 +174,7 @@ async function runFetchNews() {
   }
 
   console.log('\n==================================================');
-  console.log(`🎉 RSS Çekme Tamamlandı!`);
+  console.log(`🎉 RSS Çekme & Otomatik Çeviri Tamamlandı!`);
   console.log(`📊 İşlenen: ${totalFetched} | ✨ Yeni Eklendi: ${totalInserted} | ⏩ Atlandı/Var Olan: ${totalSkipped}`);
   console.log('==================================================\n');
 

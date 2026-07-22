@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { getCompassStatus } from '@/lib/dateUtils';
-import { Compass, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import Link from 'next/link';
 
 interface CompassHeaderProps {
   latestNewsDate?: string;
@@ -22,27 +23,31 @@ export const CompassHeader: React.FC<CompassHeaderProps> = ({
   return (
     <header className="w-full bg-navy text-paper border-b border-steel/30 shadow-md">
       {/* Üst İnce Bilgi Çubuğu */}
-      <div className="max-w-6xl mx-auto px-4 py-1.5 flex items-center justify-between text-xs font-mono text-steel border-b border-steel/20">
+      <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between text-xs font-mono text-steel border-b border-steel/20">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1 text-brass font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-brass animate-pulse"></span>
+          <span className="inline-flex items-center gap-1.5 text-brass font-medium">
+            <span className="w-2 h-2 rounded-full bg-brass animate-pulse"></span>
             CANLI HABER AKIŞI
           </span>
           <span className="hidden sm:inline text-steel/60">|</span>
-          <span className="hidden sm:inline">OTOMATİK ÇEKİM: GÜNDE 3 DEFADAN (08:00 - 14:00 - 20:00)</span>
+          <span className="hidden sm:inline text-steel/80 tracking-wide">
+            TÜRKİYE'NİN BAĞIMSIZ YAPAY ZEKA HABER PUSULASI
+          </span>
         </div>
         <div className="flex items-center gap-4">
           {totalNewsCount > 0 && (
-            <span>Yayındaki Haber: <strong className="text-paper font-semibold">{totalNewsCount}</strong></span>
+            <span>
+              Toplam Haber: <strong className="text-paper font-semibold">{totalNewsCount}</strong>
+            </span>
           )}
           {onRefresh && (
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-1 hover:text-brass transition-colors focus:outline-none focus:ring-1 focus:ring-brass rounded px-1.5 py-0.5"
+              className="inline-flex items-center gap-1.5 hover:text-brass transition-colors focus:outline-none focus:ring-1 focus:ring-brass rounded px-2 py-0.5"
               title="Sayfayı Yenile"
             >
-              <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-brass' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-brass' : ''}`} />
               <span className="hidden xs:inline">Yenile</span>
             </button>
           )}
@@ -54,24 +59,26 @@ export const CompassHeader: React.FC<CompassHeaderProps> = ({
         
         {/* Sol / Orta: Marka Logosu & Slogan */}
         <div className="text-center md:text-left flex-1">
-          <div className="inline-flex items-center gap-2 mb-1">
-            <span className="text-xs font-mono tracking-widest uppercase text-brass px-2 py-0.5 border border-brass/40 rounded-sm bg-brass/10">
+          <div className="inline-flex items-center gap-2 mb-1.5">
+            <span className="text-xs font-mono tracking-widest uppercase text-brass px-2.5 py-0.5 border border-brass/40 rounded-sm bg-brass/10 font-medium">
               YAPAY ZEKA HABER MERKEZİ
             </span>
-            <span className="text-xs font-mono text-steel">TR</span>
+            <span className="text-xs font-mono text-steel font-semibold">TR</span>
           </div>
 
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-newsreader font-bold tracking-tight text-paper select-none">
-            YZ PUSULA
+            <Link href="/" className="hover:text-brass transition-colors">
+              YZ PUSULA
+            </Link>
           </h1>
 
-          <p className="mt-1 text-sm md:text-base font-inter text-steel/90 max-w-xl font-light">
-            Dünyada yapay zeka alanında gerçekleşen yeni modeller, araştırmalar ve lansmanları anlık takip edin.
+          <p className="mt-1.5 text-sm md:text-base font-inter text-steel/90 max-w-xl font-light">
+            Dünyada yapay zeka alanında gerçekleşen yeni modeller, araştırmalar ve lansmanları anlık ve Türkçe olarak takip edin.
           </p>
         </div>
 
         {/* Sağ: Signature SVG Pusula İbresi & Akıllı Gösterge */}
-        <div className="flex items-center gap-4 bg-ink/50 border border-steel/30 rounded-lg p-3 sm:p-4 backdrop-blur-sm shadow-inner min-w-[260px] sm:min-w-[280px]">
+        <div className="flex items-center gap-4 bg-ink/50 border border-steel/30 rounded-lg p-3.5 sm:p-4 backdrop-blur-sm shadow-inner min-w-[260px] sm:min-w-[280px]">
           {/* SVG Pusula */}
           <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center">
             {/* Dış Çerçeve Çemberi */}

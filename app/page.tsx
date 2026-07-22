@@ -24,14 +24,14 @@ async function getNews(): Promise<{ news: Haber[]; isConfigured: boolean }> {
     });
 
     if (!res.ok) {
-      console.error('Supabase REST HTTP error:', res.status, res.statusText, 'Endpoint:', endpoint);
+      console.error('Supabase REST HTTP error:', res.status, res.statusText);
       return { news: [], isConfigured: true };
     }
 
     const data = await res.json();
     return { news: (data as Haber[]) || [], isConfigured: true };
   } catch (err) {
-    console.error('Unexpected error fetching news from Supabase:', err);
+    console.error('Unexpected error fetching news:', err);
     return { news: [], isConfigured: true };
   }
 }
@@ -57,53 +57,33 @@ export default async function HomePage() {
         )}
       </main>
 
-      {/* Gazeteci/Ajans Alt Bilgi (Footer) */}
+      {/* Gazete Alt Bilgi (Footer) */}
       <footer className="w-full bg-navy text-steel border-t border-steel/30 mt-12 py-8 font-mono text-xs">
         <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
-          
           <div className="flex flex-col text-center md:text-left">
-            <span className="text-paper font-newsreader font-bold text-lg tracking-wide">
+            <span className="text-paper font-newsreader font-bold text-xl tracking-wide">
               YZ PUSULA
             </span>
-            <p className="text-steel/80 text-[11px] mt-0.5">
-              Bağımsız, Otomatik ve 0 TL Maliyetli Yapay Zeka Haber Platformu.
+            <p className="text-steel/80 text-xs mt-1">
+              Dünyadaki yapay zeka gelişmelerini anlık ve Türkçe olarak sunan bağımsız haber platformu.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 text-steel/90 text-[11px]">
-            <span className="hover:text-brass transition-colors">
-              Frontend: Next.js 14 (App Router SSR)
-            </span>
-            <span>•</span>
-            <span className="hover:text-brass transition-colors">
-              DB: Supabase PostgreSQL
-            </span>
-            <span>•</span>
-            <span className="hover:text-brass transition-colors">
-              Cron: GitHub Actions
-            </span>
-            <span>•</span>
-            <span className="hover:text-brass transition-colors">
-              Hosting: Vercel Free
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 text-steel/80">
             <a
               href="https://github.com/calderon16/yzpusula"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-brass hover:text-brassLight transition-colors"
+              className="inline-flex items-center gap-1.5 text-brass hover:text-brassLight transition-colors"
             >
               <Github className="w-4 h-4" />
               <span>GitHub Repo</span>
             </a>
           </div>
-
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 mt-6 pt-4 border-t border-steel/20 text-center text-[10px] text-steel/60">
-          © {new Date().getFullYear()} YZ Pusula. Haber içerikleri orijinal kaynakların mülkiyetindedir.
+        <div className="max-w-6xl mx-auto px-4 mt-6 pt-4 border-t border-steel/20 text-center text-[11px] text-steel/60">
+          © {new Date().getFullYear()} YZ Pusula. Tüm içerikler orijinal kaynakların yayın haklarına tabidir.
         </div>
       </footer>
     </div>

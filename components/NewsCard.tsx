@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Haber } from '@/lib/supabase';
 import { getRelativeTimeString, formatFullDate } from '@/lib/dateUtils';
-import { ExternalLink, Clock, Newspaper } from 'lucide-react';
+import { ArrowRight, Clock, Newspaper } from 'lucide-react';
 
 interface NewsCardProps {
   haber: Haber;
@@ -63,14 +64,12 @@ export const NewsCard: React.FC<NewsCardProps> = ({ haber, isFeatured = false })
             isFeatured ? 'text-2xl md:text-3xl mb-3' : 'text-xl mb-2.5'
           }`}
         >
-          <a
-            href={haber.kaynak_url}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href={`/haber/${haber.id}`}
             className="focus:outline-none after:absolute after:inset-0"
           >
             {haber.baslik}
-          </a>
+          </Link>
         </h2>
 
         {/* Haber Özeti (Inter Sans-serif) */}
@@ -79,15 +78,15 @@ export const NewsCard: React.FC<NewsCardProps> = ({ haber, isFeatured = false })
         </p>
       </div>
 
-      {/* Alt Aksiyon Çubuğu (Kaynağa Git Linki & Tarih) */}
+      {/* Alt Aksiyon Çubuğu (Dahili Sayfa Linki & Tarih) */}
       <div className="pt-3 mt-2 border-t border-steel/15 flex items-center justify-between text-xs font-mono text-steel">
         <span className="text-[11px] text-steel/70 hidden sm:inline">
           {fullDate}
         </span>
 
         <span className="inline-flex items-center gap-1 text-brass font-medium group-hover:underline ml-auto">
-          Kaynağa Git
-          <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          Haberi Oku
+          <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
         </span>
       </div>
     </article>
