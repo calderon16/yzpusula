@@ -2,8 +2,8 @@ name: YZ Pusula - Otomatik RSS Haber Toplama
 
 on:
   schedule:
-    # TSİ 08:00, 14:00, 20:00 (UTC 05:00, 11:00, 17:00)
-    - cron: '0 5,11,17 * * *'
+    # Her 30 dakikada bir kesintisiz ve kademeli güncel haber çekimi
+    - cron: '*/30 * * * *'
   workflow_dispatch: # GitHub UI üzerinden manuel tetikleme butonu
 
 jobs:
