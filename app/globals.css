@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #F6F4EF;
+    color: #151C29;
+    font-family: var(--font-inter), sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Gazete Kağıdı Dokusu (Subtle editorial texture) */
+  .bg-paper-texture {
+    background-color: #F6F4EF;
+    background-image: radial-gradient(#3E5C76 0.4px, transparent 0.4px), radial-gradient(#3E5C76 0.4px, #F6F4EF 0.4px);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+    background-opacity: 0.03;
+  }
+}
+
+/* Yüksek Erişimli Focus Stilleri */
+:focus-visible {
+  outline: 2px solid #B08D57;
+  outline-offset: 2px;
+}
+
+/* Pusula Yavaş Dönüş ve Titreme Animasyonu */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+/* Özel İnce Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F6F4EF;
+}
+::-webkit-scrollbar-thumb {
+  background: #3E5C76;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B08D57;
+}

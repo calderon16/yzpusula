@@ -1,0 +1,29 @@
+name: YZ Pusula - Otomatik RSS Haber Toplama
+
+on:
+  schedule:
+    # TSİ 08:00, 14:00, 20:00 (UTC 05:00, 11:00, 17:00)
+    - cron: '0 5,11,17 * * *'
+  workflow_dispatch: # GitHub UI üzerinden manuel tetikleme butonu
+
+jobs:
+  fetch-and-store-news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repositori Kodunu Çek
+        uses: actions/checkout@v4
+
+      - name: Node.js Ortamını Kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Bağımlılıkları Yükle
+        run: npm ci
+
+      - name: RSS Akışlarını Çek ve Supabase'e Kaydet
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/fetch-news.mjs
