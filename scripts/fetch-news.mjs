@@ -135,6 +135,8 @@ async function runFetchNews() {
   console.log(`🎉 RSS Çekme Tamamlandı!`);
   console.log(`📊 İşlenen: ${totalFetched} | ✨ Yeni Eklendi: ${totalInserted} | ⏩ Atlandı/Var Olan: ${totalSkipped}`);
   console.log('==================================================\n');
+
+  process.exit(0);
 }
 
 runFetchNews().catch((err) => {
