@@ -12,7 +12,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const parser = new Parser({
   headers: {
-    'User-Agent': 'YZPusula-NewsBot/1.0 (+https://yzpusula.vercel.app)',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
   },
   timeout: 10000,
 });
@@ -50,62 +50,62 @@ const RSS_FEEDS = [
   },
 ];
 
-const DIVERSE_FALLBACK_IMAGES = [
+const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1614680376593-902f749f7b6c?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1510511459019-5dda7724fd87?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1534723452862-4c874018d66d?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1579567761406-4684ee0c75b6?auto=format&fit=crop&w=1200&q=80',
 ];
 
-function getSimilarityScore(text1, text2) {
-  if (!text1 || !text2) return 0;
-  const normalize = (str) =>
-    str
-      .toLowerCase()
-      .replace(/[^\w\sçğıöşü]/gi, '')
-      .split(/\s+/)
-      .filter((w) => w.length > 2);
+/**
+ * Makalenin orijinal web sayfasından GERÇEK og:image / twitter:image fotoğrafını çeker
+ */
+async function fetchRealOgImage(pageUrl) {
+  if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return null;
 
-  const words1 = new Set(normalize(text1));
-  const words2 = new Set(normalize(text2));
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-  if (words1.size === 0 || words2.size === 0) return 0;
-  const intersection = [...words1].filter((x) => words2.has(x));
-  const union = new Set([...words1, ...words2]);
-  return intersection.length / union.size;
+    const res = await fetch(pageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    let match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+                html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ||
+                html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
+                html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i) ||
+                html.match(/<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i);
+
+    if (match && match[1]) {
+      let imageUrl = match[1].trim().replace(/&amp;/g, '&');
+      if (imageUrl.startsWith('/')) {
+        const parsedUrl = new URL(pageUrl);
+        imageUrl = `${parsedUrl.origin}${imageUrl}`;
+      }
+      if (/^https?:\/\//i.test(imageUrl)) {
+        return imageUrl;
+      }
+    }
+  } catch (err) {
+    // Sayfa çekilemezse RSS etiketlerine geç
+  }
+  return null;
 }
 
-function extractImageUrl(item, title, feedName) {
+/**
+ * RSS etiketlerinden veya Fallback resimlerden görsel seçer
+ */
+function extractRssImage(item, title, feedName) {
   if (item.enclosure && item.enclosure.url && /\.(jpg|jpeg|png|webp|gif)/i.test(item.enclosure.url)) {
     return item.enclosure.url;
   }
@@ -126,7 +126,7 @@ function extractImageUrl(item, title, feedName) {
   for (let i = 0; i < (title || feedName).length; i++) {
     charSum += (title || feedName).charCodeAt(i);
   }
-  return DIVERSE_FALLBACK_IMAGES[charSum % DIVERSE_FALLBACK_IMAGES.length];
+  return FALLBACK_IMAGES[charSum % FALLBACK_IMAGES.length];
 }
 
 export async function translateToTurkish(text) {
@@ -177,7 +177,7 @@ function formatSummary(rawSummary) {
 }
 
 async function runFetchNews() {
-  console.log(`🧭 YZ PUSULA - Çeşitli Görsel Destekli RSS Çekme Başladı [${new Date().toISOString()}]`);
+  console.log(`🧭 YZ PUSULA - Orijinal Fotoğraf Destekli Akıllı RSS Çekme Başladı [${new Date().toISOString()}]`);
 
   const { data: existingNews } = await supabase
     .from('haberler')
@@ -216,18 +216,19 @@ async function runFetchNews() {
           summary = await translateToTurkish(summary);
         }
 
-        const isDuplicate = existingTitles.some((existing) => {
-          if (existing.url === link) return true;
-          const similarity = getSimilarityScore(existing.baslik, title);
-          return similarity >= 0.55;
-        });
-
+        const isDuplicate = existingTitles.some((existing) => existing.url === link);
         if (isDuplicate) {
           totalSkipped++;
           continue;
         }
 
-        const resimUrl = extractImageUrl(item, title, feedConfig.name);
+        // Önce orijinal web sayfasından gerçek makale fotoğrafını çek
+        let resimUrl = await fetchRealOgImage(link);
+        
+        // Alınamazsa RSS etiketlerinden veya fallback'ten çek
+        if (!resimUrl) {
+          resimUrl = extractRssImage(item, title, feedConfig.name);
+        }
 
         const { data, error } = await supabase
           .from('haberler')
@@ -248,7 +249,7 @@ async function runFetchNews() {
           console.error(`   ❌ Supabase Hata: ${error.message}`);
           totalSkipped++;
         } else if (data && data.length > 0) {
-          console.log(`   ✅ Yeni Özgün Görselli Haber: "${title.substring(0, 45)}..."`);
+          console.log(`   ✅ Gerçek Fotoğraflı Haber Eklendi: "${title.substring(0, 45)}..." [Foto: ${resimUrl.substring(0, 40)}...]`);
           existingTitles.push({ baslik: title, url: link });
           totalInserted++;
         } else {
@@ -261,7 +262,7 @@ async function runFetchNews() {
   }
 
   console.log('\n==================================================');
-  console.log(`🎉 RSS Çekme & Benzersiz Görsel Atama Tamamlandı!`);
+  console.log(`🎉 Orijinal Gerçek Fotoğraflı RSS Çekme Tamamlandı!`);
   console.log('==================================================\n');
 
   process.exit(0);
