@@ -3,22 +3,19 @@ import { createClient } from '@supabase/supabase-js';
 import { CompassHeader } from '@/components/CompassHeader';
 import { NewsGrid } from '@/components/NewsGrid';
 import { EmptyState } from '@/components/EmptyState';
-import { Haber } from '@/lib/supabase';
+import { Haber, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { Github } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getNews(): Promise<{ news: Haber[]; isConfigured: boolean }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return { news: [], isConfigured: false };
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data, error } = await supabase
       .from('haberler')
       .select('*')
