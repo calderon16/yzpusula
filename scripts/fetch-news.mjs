@@ -64,6 +64,27 @@ const FALLBACK_IMAGES = [
 ];
 
 /**
+ * Başlık benzerlik skorunu hesaplar (Jaccard)
+ */
+function getSimilarityScore(text1, text2) {
+  if (!text1 || !text2) return 0;
+  const normalize = (str) =>
+    str
+      .toLowerCase()
+      .replace(/[^\w\sçğıöşü]/gi, '')
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+
+  const words1 = new Set(normalize(text1));
+  const words2 = new Set(normalize(text2));
+
+  if (words1.size === 0 || words2.size === 0) return 0;
+  const intersection = [...words1].filter((x) => words2.has(x));
+  const union = new Set([...words1, ...words2]);
+  return intersection.length / union.size;
+}
+
+/**
  * RSS Öğesinden Haber Görsel URL'sini Çıkarır
  */
 function extractImageUrl(item, title, feedName) {
@@ -83,7 +104,6 @@ function extractImageUrl(item, title, feedName) {
     return imgMatch[1];
   }
 
-  // Fallback görsel
   let charSum = 0;
   for (let i = 0; i < (title || feedName).length; i++) {
     charSum += (title || feedName).charCodeAt(i);
@@ -120,13 +140,10 @@ export async function translateToTurkish(text) {
   }
 }
 
-/**
- * HTML etiketlerini ve fazla boşlukları temizler
- */
 function cleanText(text) {
   if (!text) return '';
   return text
-    .replace(/<[^>]*>?/gm, '') // HTML etiketlerini kaldır
+    .replace(/<[^>]*>?/gm, '')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -137,9 +154,6 @@ function cleanText(text) {
     .trim();
 }
 
-/**
- * Özeti detaylı ve kapsamlı uzunluğa (1200 karaktere kadar) getirir
- */
 function formatSummary(rawSummary) {
   const cleaned = cleanText(rawSummary);
   if (!cleaned) return 'Detaylı özet henüz bulunmuyor. Makalenin tamamını orijinal kaynağından inceleyebilirsiniz.';
@@ -148,7 +162,16 @@ function formatSummary(rawSummary) {
 }
 
 async function runFetchNews() {
-  console.log(`🧭 YZ PUSULA - RSS Haber Çekme, Görsel Ayıklama & Çeviri İşlemi Başladı [${new Date().toISOString()}]`);
+  console.log(`🧭 YZ PUSULA - RSS Çekme, Akıllı Çift Haber Engelleme & Çeviri Başladı [${new Date().toISOString()}]`);
+
+  // Son eklenen haber başlıklarını çek (çift içerik kontrolü için)
+  const { data: existingNews } = await supabase
+    .from('haberler')
+    .select('id, baslik, kaynak_url')
+    .order('yayin_tarihi', { ascending: false })
+    .limit(100);
+
+  const existingTitles = existingNews ? existingNews.map((h) => ({ baslik: h.baslik, url: h.kaynak_url })) : [];
 
   let totalFetched = 0;
   let totalInserted = 0;
@@ -165,8 +188,6 @@ async function runFetchNews() {
         totalFetched++;
         let title = cleanText(item.title);
         const link = item.link || item.guid;
-        
-        // En uzun metin kaynağını tercih et
         const rawContent = item['content:encoded'] || item.content || item.contentSnippet || item.summary || '';
         let summary = formatSummary(rawContent);
         const pubDateStr = item.pubDate || item.isoDate || new Date().toISOString();
@@ -177,16 +198,27 @@ async function runFetchNews() {
           continue;
         }
 
-        // Haber görselini ayıkla
-        const resimUrl = extractImageUrl(item, title, feedConfig.name);
-
-        // Yabancı kaynak ise otomatik Türkçe'ye çevir
+        // Yabancı kaynak ise çevir
         if (feedConfig.isForeign) {
           title = await translateToTurkish(title);
           summary = await translateToTurkish(summary);
         }
 
-        // Supabase'e ekleme / upsert
+        // Çift / Benzer haber kontrolü
+        const isDuplicate = existingTitles.some((existing) => {
+          if (existing.url === link) return true;
+          const similarity = getSimilarityScore(existing.baslik, title);
+          return similarity >= 0.55;
+        });
+
+        if (isDuplicate) {
+          console.log(`   ⏩ Benzer/Çift Haber Atlandı: "${title.substring(0, 40)}..."`);
+          totalSkipped++;
+          continue;
+        }
+
+        const resimUrl = extractImageUrl(item, title, feedConfig.name);
+
         const { data, error } = await supabase
           .from('haberler')
           .upsert(
@@ -198,7 +230,7 @@ async function runFetchNews() {
               resim_url: resimUrl,
               yayin_tarihi: pubDate,
             },
-            { onConflict: 'kaynak_url', ignoreDuplicates: false }
+            { onConflict: 'kaynak_url', ignoreDuplicates: true }
           )
           .select('id');
 
@@ -206,7 +238,8 @@ async function runFetchNews() {
           console.error(`   ❌ Supabase Hata (${feedConfig.name}): ${error.message}`);
           totalSkipped++;
         } else if (data && data.length > 0) {
-          console.log(`   ✅ Haber Güncellendi/Eklendi [Görsel: var]: "${title.substring(0, 45)}..."`);
+          console.log(`   ✅ Yeni Özgün Haber Eklendi: "${title.substring(0, 45)}..."`);
+          existingTitles.push({ baslik: title, url: link });
           totalInserted++;
         } else {
           totalSkipped++;
@@ -218,8 +251,8 @@ async function runFetchNews() {
   }
 
   console.log('\n==================================================');
-  console.log(`🎉 RSS Çekme & Otomatik Görselleştirme Tamamlandı!`);
-  console.log(`📊 İşlenen: ${totalFetched} | ✨ Eklendi/Güncellendi: ${totalInserted} | ⏩ Atlandı: ${totalSkipped}`);
+  console.log(`🎉 Akıllı RSS Çekme & Çift İçerik Filtreleme Tamamlandı!`);
+  console.log(`📊 İşlenen: ${totalFetched} | ✨ Yeni Eklendi: ${totalInserted} | ⏩ Atlandı (Çift/Var Olan): ${totalSkipped}`);
   console.log('==================================================\n');
 
   process.exit(0);

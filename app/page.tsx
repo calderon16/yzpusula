@@ -3,7 +3,6 @@ import { CompassHeader } from '@/components/CompassHeader';
 import { NewsGrid } from '@/components/NewsGrid';
 import { EmptyState } from '@/components/EmptyState';
 import { Haber, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
-import { Github } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -57,7 +56,7 @@ export default async function HomePage() {
         )}
       </main>
 
-      {/* Gazete Alt Bilgi (Footer) */}
+      {/* Gazete Alt Bilgi (Footer - GitHub linki tamamen kaldırıldı) */}
       <footer className="w-full bg-navy text-steel border-t border-steel/30 mt-12 py-8 font-mono text-xs">
         <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-col text-center md:text-left">
@@ -67,18 +66,6 @@ export default async function HomePage() {
             <p className="text-steel/80 text-xs mt-1">
               Dünyadaki yapay zeka gelişmelerini anlık ve Türkçe olarak sunan bağımsız haber platformu.
             </p>
-          </div>
-
-          <div className="flex items-center gap-4 text-steel/80">
-            <a
-              href="https://github.com/calderon16/yzpusula"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-brass hover:text-brassLight transition-colors"
-            >
-              <Github className="w-4 h-4" />
-              <span>GitHub Repo</span>
-            </a>
           </div>
         </div>
 

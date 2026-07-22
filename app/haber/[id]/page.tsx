@@ -5,7 +5,7 @@ import { CompassHeader } from '@/components/CompassHeader';
 import { NewsCard } from '@/components/NewsCard';
 import { Haber, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { formatFullDate, getRelativeTimeString } from '@/lib/dateUtils';
-import { ArrowLeft, ExternalLink, Clock, Newspaper, Sparkles, BookOpen } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Clock, Newspaper, BookOpen } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -236,7 +236,7 @@ export default async function HaberDetailPage({ params }: PageProps) {
         )}
       </main>
 
-      {/* Alt Bilgi */}
+      {/* Alt Bilgi (GitHub linki olmadan temiz) */}
       <footer className="w-full bg-navy text-steel border-t border-steel/30 mt-16 py-8 font-mono text-xs">
         <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-col text-center md:text-left">
