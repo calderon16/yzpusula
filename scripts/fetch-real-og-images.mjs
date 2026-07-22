@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://facoyzosjmukbtbqszdq.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhY295em9zam11a2J0YnFzemRxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDcxOTA4MiwiZXhwIjoyMTAwMjk1MDgyfQ.t8TbIayIKQbwOlx1gaDoBgd_ciH0hhQmOlNQFgFbD4A';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('❌ HATA: SUPABASE_URL veya SUPABASE_SERVICE_ROLE_KEY ortam değişkeni tanımlı değil!');
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-/**
- * Makalenin orijinal web sayfasından gerçek og:image / twitter:image görselini çeker
- */
 async function fetchRealOgImage(pageUrl) {
   if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return null;
 
@@ -30,38 +31,30 @@ async function fetchRealOgImage(pageUrl) {
 
     const html = await res.text();
 
-    // 1. og:image
     let match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
                 html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
     
-    // 2. twitter:image
     if (!match) {
       match = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
               html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i);
     }
 
-    // 3. link rel="image_src"
     if (!match) {
       match = html.match(/<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i);
     }
 
     if (match && match[1]) {
-      let imageUrl = match[1].trim();
-      // HTML Entity çözümü (&amp; -> &)
-      imageUrl = imageUrl.replace(/&amp;/g, '&');
-      
-      // Göreli URL ise tam URL yap
+      let imageUrl = match[1].trim().replace(/&amp;/g, '&');
       if (imageUrl.startsWith('/')) {
         const parsedUrl = new URL(pageUrl);
         imageUrl = `${parsedUrl.origin}${imageUrl}`;
       }
-
       if (/^https?:\/\//i.test(imageUrl)) {
         return imageUrl;
       }
     }
   } catch (err) {
-    // Sayfa çekilemezse sessizce geç
+    // Sayfa çekilemezse geç
   }
   return null;
 }

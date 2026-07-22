@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://facoyzosjmukbtbqszdq.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhY295em9zam11a2J0YnFzemRxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDcxOTA4MiwiZXhwIjoyMTAwMjk1MDgyfQ.t8TbIayIKQbwOlx1gaDoBgd_ciH0hhQmOlNQFgFbD4A';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('❌ HATA: SUPABASE_URL veya SUPABASE_SERVICE_ROLE_KEY ortam değişkeni tanımlı değil!');
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-/**
- * İki metin arasındaki Jaccard kelime benzerliğini (0 - 1.0) hesaplar
- */
 function getSimilarityScore(text1, text2) {
   if (!text1 || !text2) return 0;
 
@@ -59,7 +60,6 @@ async function runDeduplication() {
 
       const similarity = getSimilarityScore(current.baslik, target.baslik);
 
-      // %60 veya üzeri başlık benzerliği varsa veya tam olarak aynı kaynak URL ise
       if (similarity >= 0.60 || current.kaynak_url === target.kaynak_url) {
         console.log(`\n🗑️ Çift Haber Tespit Edildi:`);
         console.log(`   └─ Ana: "${current.baslik.substring(0, 50)}..." (${current.kaynak_adi})`);

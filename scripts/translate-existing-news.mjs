@@ -1,11 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://facoyzosjmukbtbqszdq.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhY295em9zam11a2J0YnFzemRxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDcxOTA4MiwiZXhwIjoyMTAwMjk1MDgyfQ.t8TbIayIKQbwOlx1gaDoBgd_ciH0hhQmOlNQFgFbD4A';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('❌ HATA: SUPABASE_URL veya SUPABASE_SERVICE_ROLE_KEY ortam değişkeni tanımlı değil!');
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function translateToTurkish(text) {
+export async function translateToTurkish(text) {
   if (!text || text.trim() === '') return text;
   if (/[çğıöşüÇĞİÖŞÜ]/.test(text)) return text;
 
@@ -31,46 +35,55 @@ async function translateToTurkish(text) {
   }
 }
 
-async function run() {
-  console.log('🔄 Supabase Veritabanındaki Mevcut Haberleri Türkçe\'ye Çevirme Başladı...');
+async function translateAllExistingNews() {
+  console.log('🌐 YZ PUSULA - Veritabanındaki Mevcut Haberleri Türkçe Çevirme İşlemi Başladı...');
 
-  const { data: haberler, error } = await supabase.from('haberler').select('*');
+  const { data: haberler, error } = await supabase
+    .from('haberler')
+    .select('id, baslik, ozet, kaynak_adi')
+    .order('yayin_tarihi', { ascending: false });
+
   if (error) {
-    console.error('Hata:', error.message);
+    console.error('❌ Hata:', error.message);
     process.exit(1);
   }
 
-  console.log(`📊 Toplam ${haberler.length} haber inceleniyor...`);
-  let updatedCount = 0;
+  console.log(`📊 Toplam ${haberler.length} haber taranıyor...`);
+  let translatedCount = 0;
 
-  for (const item of haberler) {
-    const isTurkish = /[çğıöşüÇĞİÖŞÜ]/.test(item.baslik) && /[çğıöşüÇĞİÖŞÜ]/.test(item.ozet);
-    if (isTurkish) {
-      continue;
-    }
+  for (let i = 0; i < haberler.length; i++) {
+    const haber = haberler[i];
+    const needsTitleTranslation = !/[çğıöşüÇĞİÖŞÜ]/.test(haber.baslik);
+    const needsSummaryTranslation = haber.ozet && !/[çğıöşüÇĞİÖŞÜ]/.test(haber.ozet);
 
-    console.log(`\n🔤 Çevriliyor [${item.kaynak_adi}]: ${item.baslik.substring(0, 40)}...`);
-    const newBaslik = await translateToTurkish(item.baslik);
-    const newOzet = await translateToTurkish(item.ozet);
+    if (needsTitleTranslation || needsSummaryTranslation) {
+      console.log(`\n[${i + 1}/${haberler.length}] 🔄 Çevriliyor (${haber.kaynak_adi}): "${haber.baslik.substring(0, 45)}..."`);
 
-    const { error: updateError } = await supabase
-      .from('haberler')
-      .update({ baslik: newBaslik, ozet: newOzet })
-      .eq('id', item.id);
+      const newTitle = needsTitleTranslation ? await translateToTurkish(haber.baslik) : haber.baslik;
+      const newSummary = needsSummaryTranslation ? await translateToTurkish(haber.ozet) : haber.ozet;
 
-    if (updateError) {
-      console.error(`❌ Güncelleme hatası (${item.id}):`, updateError.message);
-    } else {
-      console.log(`   ✅ Türkçe'ye çevrildi: ${newBaslik.substring(0, 45)}...`);
-      updatedCount++;
+      const { error: updateError } = await supabase
+        .from('haberler')
+        .update({
+          baslik: newTitle,
+          ozet: newSummary,
+        })
+        .eq('id', haber.id);
+
+      if (updateError) {
+        console.error(`❌ Güncelleme hatası (${haber.id}):`, updateError.message);
+      } else {
+        translatedCount++;
+        console.log(`   ✅ Başarıyla Türkçe'ye Çevrildi -> "${newTitle.substring(0, 45)}..."`);
+      }
     }
   }
 
-  console.log(`\n🎉 İşlem Tamamlandı! Toplam ${updatedCount} haber Türkçe'ye çevrildi ve güncellendi.`);
+  console.log(`\n🎉 Toplam ${translatedCount} adet İngilizce haber başarıyla Türkçe'ye çevrildi ve veritabanı güncellendi!`);
   process.exit(0);
 }
 
-run().catch((err) => {
+translateAllExistingNews().catch((err) => {
   console.error(err);
   process.exit(1);
 });

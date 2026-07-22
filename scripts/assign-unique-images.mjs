@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://facoyzosjmukbtbqszdq.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhY295em9zam11a2J0YnFzemRxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDcxOTA4MiwiZXhwIjoyMTAwMjk1MDgyfQ.t8TbIayIKQbwOlx1gaDoBgd_ciH0hhQmOlNQFgFbD4A';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('❌ HATA: SUPABASE_URL veya SUPABASE_SERVICE_ROLE_KEY ortam değişkeni tanımlı değil!');
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -63,12 +67,10 @@ async function assignUniqueImages() {
   for (let i = 0; i < haberler.length; i++) {
     const haber = haberler[i];
     
-    // Eğer resim kütüphanesinden tekrar kullanılan bir resmi varsa veya boşsa, benzersiz görsel ata
     let imageToUse = haber.resim_url;
     const isUnsplashFallback = !imageToUse || imageToUse.includes('images.unsplash.com');
 
     if (isUnsplashFallback) {
-      // Dizi indexi ve haber ID'sinden benzersiz resim seç
       const imageIndex = (i + haber.id.charCodeAt(0)) % UNIQUE_TECH_IMAGES.length;
       imageToUse = UNIQUE_TECH_IMAGES[imageIndex];
     }
