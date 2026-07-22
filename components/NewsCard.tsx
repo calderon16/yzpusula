@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Haber } from '@/lib/supabase';
 import { getRelativeTimeString, formatFullDate } from '@/lib/dateUtils';
 import { ArrowRight, Clock, Newspaper } from 'lucide-react';
@@ -12,7 +11,7 @@ interface NewsCardProps {
   isFeatured?: boolean;
 }
 
-const FALLBACK_IMAGES = [
+const DIVERSE_FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&q=80',
@@ -21,20 +20,47 @@ const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
   'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1614680376593-902f749f7b6c?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1510511459019-5dda7724fd87?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1534723452862-4c874018d66d?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1579567761406-4684ee0c75b6?auto=format&fit=crop&w=1200&q=80',
 ];
 
-function getFallbackImage(title: string): string {
+function getFallbackImage(title: string, id?: string): string {
   let charSum = 0;
-  for (let i = 0; i < title.length; i++) {
-    charSum += title.charCodeAt(i);
+  const seed = (title || '') + (id || '');
+  for (let i = 0; i < seed.length; i++) {
+    charSum += seed.charCodeAt(i);
   }
-  return FALLBACK_IMAGES[charSum % FALLBACK_IMAGES.length];
+  return DIVERSE_FALLBACK_IMAGES[charSum % DIVERSE_FALLBACK_IMAGES.length];
 }
 
 export const NewsCard: React.FC<NewsCardProps> = ({ haber, isFeatured = false }) => {
   const relativeTime = getRelativeTimeString(haber.yayin_tarihi);
   const fullDate = formatFullDate(haber.yayin_tarihi);
-  const imageUrl = haber.resim_url || getFallbackImage(haber.baslik);
+  const imageUrl = haber.resim_url || getFallbackImage(haber.baslik, haber.id);
 
   const getSourceBadgeStyle = (kaynak: string) => {
     switch (kaynak.toLowerCase()) {
@@ -66,8 +92,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({ haber, isFeatured = false })
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
             onError={(e) => {
-              // Resim yüklenemezse fallback görsele geç
-              (e.target as HTMLImageElement).src = getFallbackImage(haber.baslik);
+              (e.target as HTMLImageElement).src = getFallbackImage(haber.baslik, haber.id);
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80"></div>
@@ -95,7 +120,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({ haber, isFeatured = false })
 
         {/* Metin İçeriği */}
         <div className="p-5 md:p-6">
-          {/* Haber Başlığı (Newsreader Serif Font) */}
+          {/* Haber Başlığı */}
           <h2
             className={`font-newsreader font-bold text-ink leading-snug tracking-normal group-hover:text-brass transition-colors ${
               isFeatured ? 'text-2xl md:text-3xl mb-3' : 'text-xl mb-2.5'
@@ -109,14 +134,14 @@ export const NewsCard: React.FC<NewsCardProps> = ({ haber, isFeatured = false })
             </Link>
           </h2>
 
-          {/* Haber Özeti (Inter Sans-serif - Daha Uzun ve Okunaklı) */}
+          {/* Haber Özeti */}
           <p className="font-inter text-ink/80 text-sm md:text-base leading-relaxed line-clamp-4 mb-4 font-normal">
             {haber.ozet}
           </p>
         </div>
       </div>
 
-      {/* Alt Aksiyon Çubuğu (Dahili Sayfa Linki & Tarih) */}
+      {/* Alt Aksiyon Çubuğu */}
       <div className="px-5 pb-5 pt-3 border-t border-steel/15 flex items-center justify-between text-xs font-mono text-steel">
         <span className="text-[11px] text-steel/70 hidden sm:inline">
           {fullDate}
